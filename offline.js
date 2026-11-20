@@ -1,5 +1,5 @@
 const prefix='mangmang:'+new URL(self.registration.scope).pathname+':';
-const version=prefix+'d33fe26611e26404';
+const version=prefix+'50369a28d4461b6b';
 const urls=["./", "index.html", "manifest.webmanifest", "qr.png", "garden.html", "garden.js", "garden.pck", "garden.icon.png", "garden.apple-touch-icon.png", "garden.wasm.gz", "garden.audio.position.worklet.js", "garden.audio.worklet.js"];
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
