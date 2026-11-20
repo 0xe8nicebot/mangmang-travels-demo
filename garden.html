@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>莽莽出门了</title>
+<link id="-gd-engine-icon" rel="icon" type="image/png" href="garden.icon.png" />
+<link rel="apple-touch-icon" href="garden.apple-touch-icon.png"/>
+
+<style>
+*{box-sizing:border-box}html,body,#canvas{margin:0;width:100%;height:100%;overflow:hidden;background:#eee5ce}#canvas{display:block;outline:0;touch-action:none}#loading{position:fixed;inset:0;display:grid;place-content:center;justify-items:center;gap:1rem;background:#eee5ce;color:#393929;font:16px system-ui,sans-serif;text-align:center;padding:24px}#loading[hidden]{display:none}img{width:86px;height:86px;border-radius:22px}progress{width:128px;height:5px;accent-color:#9c614c}button{font:inherit;background:#535c42;color:#fff;border:0;border-radius:12px;min-height:44px;padding:0 20px}
+</style>
+</head><body>
+<canvas id="canvas" tabindex="0" aria-label="莽莽的庭院"></canvas>
+<div id="loading" role="status"><img src="garden.icon.png" alt=""><span id="message">正走进瓦檐下…</span><progress id="progress"></progress><button hidden id="retry" type="button">重新进入</button></div>
+<script src="garden.js"></script>
+<script>
+const config={"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"garden","experimentalVK":false,"fileSizes":{"garden.pck":6864448,"garden.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const label=document.querySelector('#message'), bar=document.querySelector('#progress');
+const originalFetch=window.fetch.bind(window);
+const wasmURL=new URL('garden.wasm',location.href).href;
+// Pages serves precompressed files without a Content-Encoding header.
+window.fetch=async function(input, options){
+  const url=new URL(input instanceof Request?input.url:input,location.href);
+  if(url.href!==wasmURL || !('DecompressionStream' in window)) return originalFetch(input,options);
+  const payload=await originalFetch(wasmURL+'.gz',options);
+  if(!payload.ok) throw new Error('无法下载庭院引擎');
+  return new Response(payload.body.pipeThrough(new DecompressionStream('gzip')), {
+    headers:{'Content-Type':'application/wasm','Content-Length':String(config.fileSizes['garden.wasm'])}
+  });
+};
+async function enter(){
+  if(Engine.getMissingFeatures({threads:false}).length) throw new Error('此浏览器缺少 WebGL 2 或 WebAssembly，请用新版 Safari 或 Chrome 打开。');
+  const engine=new Engine(config);
+  await engine.startGame({onProgress:(n,total)=>{ if(total){bar.max=total;bar.value=n;} }});
+  document.querySelector('#loading').hidden=true;
+  window.parent.postMessage('mangmang-ready',location.origin);
+}
+async function start(){
+  if(!navigator.locks) return enter();
+  const key='mangmang-natural-'+location.pathname;
+  label.textContent='正走进瓦檐下…';
+  await navigator.locks.request(key,{ifAvailable:true},async lock=>{
+    if(!lock){throw new Error('庭院已在另一个标签页打开。关掉那个页面，就能在这里继续。');}
+    await enter();
+    await new Promise(resolve=>window.addEventListener('pagehide',resolve,{once:true}));
+  });
+}
+window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
+document.querySelector('#retry').onclick=()=>location.reload();
+start().catch(err=>{
+  console.error(err);
+  label.textContent=err.message?.match(/[\u3400-\u9fff]/)?err.message:'庭院载入中断，请检查连接后重试。';
+  bar.hidden=true;
+  document.querySelector('#retry').hidden=false;
+});
+</script></body></html>
+
