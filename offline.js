@@ -1,10 +1,11 @@
 const prefix='mangmang:'+new URL(self.registration.scope).pathname+':';
-const version=prefix+'54b955320499fee4';
+const version=prefix+'d33fe26611e26404';
 const urls=["./", "index.html", "manifest.webmanifest", "qr.png", "garden.html", "garden.js", "garden.pck", "garden.icon.png", "garden.apple-touch-icon.png", "garden.wasm.gz", "garden.audio.position.worklet.js", "garden.audio.worklet.js"];
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
     const cache=await caches.open(version);
     const requests=urls.map(name=>new Request(name,{cache:'reload'}));
+    if(!('DecompressionStream' in self)) requests.push(new Request('garden.wasm',{cache:'reload'}));
     await cache.addAll(requests);
   })());
 });
